@@ -64,10 +64,7 @@ def draw(graph, filename, width=None, height=None, directed=False):
     _draw_svg(layout, graph, filename, directed)
 
 def _create_random_layout(vertices, width, height):
-    locations = {
-        vertex: np.array([randint(0, width), randint(0, height)])
-        for vertex in vertices
-    }
+    locations = np.array([[randint(0, width), randint(0, height)] for _ in vertices])
     return Layout(width, height, locations)
 
 def _draw_svg(layout, graph, filename, directed):
@@ -87,7 +84,7 @@ def _create_layout(graph, width=None, height=None):
     if height is None:
         height = 400
     layout = _create_random_layout(vertices, width, height)
-    for _ in range(100):
+    for _ in range(2):
         _force_update(layout, graph)
     return layout
 
@@ -98,10 +95,38 @@ def _force_update(layout, graph):
     """
     c1, c2, c3, c4 = 2, 1, 1, 0.1
     locations = layout.locations
-    for vertex in locations:
-        force = _calculate_force(vertex, layout, graph)
+    adj_matrix = _adjacency_matrix(graph)
+    for vertex, _ in enumerate(locations):
+        force = _calculate_force(vertex, layout, adj_matrix)
         locations[vertex] = locations[vertex] + force * c4
 
-def _calculate_force(vertex, layout, graph):
+def _adjacency_matrix(graph, directed=False):
+    n_vert = len(graph['vertices'])
+    edges = set(graph['edges'])
+    matrix = np.zeros((n_vert, n_vert), dtype=int)
+    for i in range(n_vert):
+        for j in range(n_vert):
+            if directed:
+                matrix[i, j] = (i,j) in edges
+            else:
+                matrix[i, j] = (i,j) in edges or (j,i) in edges
+    return matrix
+
+def _calculate_force(vertex, layout, adj_matrix):
     c1, c2, c3, c4 = 2, 1, 1, 0.1
-    return np.array([0,0])
+    locations = layout.locations
+    neighbors = adj_matrix[vertex]
+    non_neighbors = 1 - adj_matrix[vertex]
+
+    differences = locations[vertex] - locations
+    distances = np.apply_along_axis(np.linalg.norm, 1, differences)
+    distances[vertex] = 1e-10
+
+    neighbor_forces = c1 * np.log(distances * neighbors / c2)
+    non_neighbor_forces = non_neighbors * (c3 / distances * 2)
+    forces = neighbor_forces + non_neighbor_forces
+    forces[vertex] = 0
+
+    amount_to_move = np.sum(differences.T / distances * forces, axis=1)
+    print differences.T / distances * forces
+    return amount_to_move
