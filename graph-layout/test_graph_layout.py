@@ -1,4 +1,5 @@
 from graph_layout import _create_layout, SVG, draw
+from StringIO import StringIO
 
 def complete_graph(n):
     vertices = range(1, n+1)
@@ -30,4 +31,5 @@ def test_svg():
 
 def test_draw():
     G = complete_graph(4)
-    draw(G, "/tmp/out.svg")
+    buf = StringIO()
+    draw(G, buf)

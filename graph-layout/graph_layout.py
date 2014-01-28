@@ -36,9 +36,12 @@ class SVG(object):
         edge = edge.format(x1=x1, y1=y1, x2=x2, y2=y2)
         self.edges.append(edge)
     
-    def write(self, filename):
-        with open(filename, 'w') as f:
-            f.write(str(self))
+    def write(self, buffer_or_filename):
+        if hasattr(buffer_or_filename, 'write'):
+            buffer_or_filename.write(str(self))
+        else:
+            with open(buffer_or_filename, 'w') as f:
+                f.write(str(self))
 
     def __repr__(self):
         return "SVG(width=%d, height=%d)" % (self.width, self.height)
