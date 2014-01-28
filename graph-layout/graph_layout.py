@@ -1,5 +1,6 @@
 from random import randint
 from collections import namedtuple
+import numpy as np
 
 CSS = """
 <style type="text/css"><![CDATA[
@@ -64,7 +65,7 @@ def draw(graph, filename, width=None, height=None, directed=False):
 
 def _create_random_layout(vertices, width, height):
     locations = {
-        vertex: (randint(0, width), randint(0, height)) 
+        vertex: np.array([randint(0, width), randint(0, height)])
         for vertex in vertices
     }
     return Layout(width, height, locations)
@@ -85,4 +86,22 @@ def _create_layout(graph, width=None, height=None):
         width = 400
     if height is None:
         height = 400
-    return _create_random_layout(vertices, width, height)
+    layout = _create_random_layout(vertices, width, height)
+    for _ in range(100):
+        _force_update(layout, graph)
+    return layout
+
+def _force_update(layout, graph):
+    """
+    Constants are taken from chapter 12 of the "Handbook of Graph
+    Drawing and Visualization"
+    """
+    c1, c2, c3, c4 = 2, 1, 1, 0.1
+    locations = layout.locations
+    for vertex in locations:
+        force = _calculate_force(vertex, layout, graph)
+        locations[vertex] = locations[vertex] + force * c4
+
+def _calculate_force(vertex, layout, graph):
+    c1, c2, c3, c4 = 2, 1, 1, 0.1
+    return np.array([0,0])
