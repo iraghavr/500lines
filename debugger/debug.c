@@ -1,16 +1,20 @@
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ptrace.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
+#define BREAKPOINT 0x00000000004004f4
+#define ADDR 0x610c
+
 int main(int argc, char **argv) {
-    // execvp() needs a NULL-terminated array, so we copy from argv into
+    // execv() needs a NULL-terminated array, so we copy from argv into
     // child_argv.
-    printf("parent pid: %d\n", getpid());
-    char **child_argv  = calloc(argc - 1, sizeof(char));
+    char **child_argv  = calloc(argc, sizeof(char));
     int i;
-    printf("argc: %d\n", argc);
     for(i = 0; i < argc - 1; ++i) {
         child_argv[i] = argv[i+1];
     }
@@ -24,18 +28,21 @@ int main(int argc, char **argv) {
     }
 
     if (child_pid == 0) { // child
-        printf("child pid: %d\n", getpid());
-        printf("argv[1]: %s\n", argv[1]);
-        printf("child_argv[0]: %s\n", child_argv[0]);
-        printf("child_argv[1]: %p\n", child_argv[1]);
+        if (ptrace(PTRACE_TRACEME, 0, NULL, 0) == -1) {
+            printf("ptrace: error %d", errno);
+            return -1;
+        }
         if (execv(argv[1], child_argv) == -1) {
-            printf("oh noes, error %d has occurred!\n", errno);
+            printf("execv: error %d", errno);
             return -1;
         }
     }
 
     // will be parent here!
-    printf("hi, I am %d and I have a child called %d!\n",
-           getpid(), child_pid);
+    printf("we are in control!\n");
+    sleep(2);
+
+    ptrace(PTRACE_CONT, child_pid, NULL, 0);
+
     return 0;
 }
