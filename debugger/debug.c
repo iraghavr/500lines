@@ -22,7 +22,9 @@ int main(int argc, char **argv) {
     if (argc < 2) {
         return -1;
     }
+
     pid_t child_pid = fork();
+
     if (child_pid == -1) { //error
         return -1;
     }
@@ -40,6 +42,8 @@ int main(int argc, char **argv) {
 
     // will be parent here!
     printf("we are in control!\n");
+    ptrace(PTRACE_SETOPTIONS, child_pid, NULL,
+           PTRACE_O_TRACEEXEC);
     sleep(2);
 
     ptrace(PTRACE_CONT, child_pid, NULL, 0);
